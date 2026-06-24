@@ -1,0 +1,49 @@
+paths:
+  data_dir: data
+  sqlite_path: data/papers.sqlite3
+  chroma_dir: data/chroma
+  pdf_dir: data/pdfs
+  repo_dir: data/repos
+
+arxiv:
+  default_queries:
+    - retrieval augmented generation
+    - agentic ai
+    - multimodal large language models
+  categories: []
+  max_results_per_query: 25
+  sort_by: submittedDate
+  sort_order: descending
+
+ingestion:
+  download_pdfs: true
+  chunk_size: 1400
+  chunk_overlap: 200
+  min_chunk_chars: 300
+  request_timeout_seconds: 45
+  user_agent: PaperScoutAgent/0.1
+
+embedding:
+  model_name: sentence-transformers/all-MiniLM-L6-v2
+  batch_size: 32
+
+github:
+  enabled: true
+  token_env: GITHUB_TOKEN
+  max_search_results: 3
+
+llm:
+  enabled: true
+  provider: openai-compatible
+  base_url: https://api.openai.com/v1
+  api_key_env: OPENAI_API_KEY
+  model: gpt-4.1-mini
+  temperature: 0.2
+  max_tokens: 1400
+  timeout_seconds: 60
+
+scheduler:
+  day: 1
+  hour: 3
+  minute: 30
+  timezone: Asia/Shanghai
