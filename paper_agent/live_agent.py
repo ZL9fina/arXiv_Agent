@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import re
@@ -44,11 +44,16 @@ class LivePaperAgent:
         self.llm = LLMClient(config.llm)
 
     def search_papers(self, query: str, max_results: int = 8) -> list[PaperWithCode]:
-        papers = list(self.arxiv.search(query, max_results=max_results))
+        try:
+            papers = list(self.arxiv.search(query, max_results=max_results))
+        except Exception as exc:
+            if is_arxiv_transient_error(exc):
+                return []
+            raise
         return [PaperWithCode(paper=paper, code_repos=self.code_finder.discover(paper)) for paper in papers]
 
     def discover(self, topic: str, max_results: int = 8, use_llm: bool = True) -> LivePaperReport:
-        queries = self.plan_queries(topic, max_queries=3) if use_llm else [topic]
+        queries = self.plan_queries(topic, max_queries=3) if use_llm else fallback_queries(topic, max_queries=3)
         results_by_id: dict[str, PaperWithCode] = {}
         per_query_limit = max(1, max_results)
         for query in queries:
@@ -70,7 +75,7 @@ class LivePaperAgent:
 
     def plan_queries(self, topic: str, max_queries: int = 3) -> list[str]:
         if not self.llm.is_configured:
-            return [topic]
+            return fallback_queries(topic, max_queries=max_queries)
         prompt = (
             "You are planning arXiv searches for a research-paper learning agent. "
             "Convert the user's Chinese or English learning goal into concise English arXiv search queries. "
@@ -89,7 +94,7 @@ class LivePaperAgent:
         except Exception:
             queries = []
         queries = [query for query in queries if query.strip()]
-        return queries[:max_queries] or [topic]
+        return queries[:max_queries] or fallback_queries(topic, max_queries=max_queries)
 
     def generate_report(
         self,
@@ -194,6 +199,34 @@ def parse_json_string_list(text: str) -> list[str]:
         return []
     return [str(item).strip() for item in value if str(item).strip()]
 
+def fallback_queries(topic: str, max_queries: int = 3) -> list[str]:
+    """Extract arXiv-friendly keywords when no LLM query planner is available."""
+    phrases = re.findall(r"[A-Za-z][A-Za-z0-9_.+-]*(?:\s+[A-Za-z][A-Za-z0-9_.+-]*){0,4}", topic)
+    cleaned: list[str] = []
+    for phrase in phrases:
+        query = " ".join(part for part in phrase.split() if len(part) > 1)
+        if query and query.lower() not in {"ai", "ml"}:
+            cleaned.append(query)
+    if cleaned:
+        return dedupe_preserve_order(cleaned)[:max_queries]
+    return [topic]
+
+
+def dedupe_preserve_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        key = value.lower()
+        if key not in seen:
+            seen.add(key)
+            result.append(value)
+    return result
+
+
+def is_arxiv_transient_error(exc: Exception) -> bool:
+    message = str(exc)
+    return "HTTP 429" in message or "HTTP 503" in message or "Page request resulted" in message
+
 
 def paper_to_dict(item: PaperWithCode) -> dict[str, object]:
     paper = item.paper
@@ -232,3 +265,5 @@ def report_to_dict(report: LivePaperReport) -> dict[str, object]:
 
 def _date_str(value: datetime | None) -> str:
     return value.date().isoformat() if value else ""
+
+

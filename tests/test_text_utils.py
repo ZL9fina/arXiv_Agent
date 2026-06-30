@@ -1,5 +1,5 @@
-from paper_agent.code_finder import extract_urls, normalize_url
-from paper_agent.live_agent import parse_json_string_list
+﻿from paper_agent.code_finder import extract_urls, normalize_url
+from paper_agent.live_agent import fallback_queries, is_arxiv_transient_error, parse_json_string_list
 from paper_agent.pdf import chunk_text
 from paper_agent.source_manager import is_cloneable_repo_url
 
@@ -25,3 +25,11 @@ def test_papers_with_code_link_is_not_cloneable():
 def test_parse_json_string_list_from_fenced_block():
     text = '```json\n["retrieval augmented generation", "agent planning"]\n```'
     assert parse_json_string_list(text) == ["retrieval augmented generation", "agent planning"]
+
+
+def test_fallback_queries_extracts_english_keyword_from_chinese_goal():
+    assert fallback_queries("我想学习 meshMAE的相关知识") == ["meshMAE"]
+
+
+def test_arxiv_rate_limit_is_transient():
+    assert is_arxiv_transient_error(Exception("Page request resulted in HTTP 429"))

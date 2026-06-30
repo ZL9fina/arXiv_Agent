@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Iterable
 
@@ -23,7 +23,7 @@ SORT_ORDER = {
 class ArxivPaperClient:
     def __init__(self, config: ArxivConfig):
         self.config = config
-        self.client = arxiv.Client(page_size=100, delay_seconds=3, num_retries=3)
+        self.client = arxiv.Client(page_size=10, delay_seconds=5, num_retries=2)
 
     def search(self, query: str, max_results: int | None = None) -> Iterable[Paper]:
         search_query = self._build_query(query)
@@ -67,4 +67,5 @@ def _normalize_space(value: str | None) -> str:
     if not value:
         return ""
     return " ".join(value.split())
+
 

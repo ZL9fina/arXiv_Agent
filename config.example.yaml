@@ -35,9 +35,9 @@ github:
 llm:
   enabled: true
   provider: openai-compatible
-  base_url: https://api.openai.com/v1
-  api_key_env: OPENAI_API_KEY
-  model: gpt-4.1-mini
+  base_url: https://zyapi.tuluo.top:8888/v1
+  api_key_env: pk_Fs-LkEPW1j9Q6PkYFPe_hrLM7tgAH9rqE3s_nthvWNc
+  model: glm-5.2
   temperature: 0.2
   max_tokens: 1400
   timeout_seconds: 60

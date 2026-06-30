@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 from pathlib import Path
@@ -127,7 +127,8 @@ def handle_live_learn(args: argparse.Namespace) -> int:
     console.print(f"[cyan]Queries[/cyan] {', '.join(report.queries)}")
     if not report.llm_used:
         console.print(
-            f"[yellow]LLM was not used.[/yellow] Set {cfg.llm.api_key_env} "
+            "[yellow]LLM was not used.[/yellow] "
+            f"{llm_config_hint(cfg.llm.api_key_env)} "
             "or pass a provider-compatible config to enable generated recommendations."
         )
     console.print(Markdown(report.answer))
@@ -270,11 +271,26 @@ def handle_mcp_server(args: argparse.Namespace) -> int:
 
 def confirm(prompt: str, default: bool) -> bool:
     suffix = "[Y/n]" if default else "[y/N]"
-    answer = input(f"{prompt} {suffix} ").strip().lower()
+    try:
+        answer = input(f"{prompt} {suffix} ").strip().lower()
+    except EOFError:
+        return default
     if not answer:
         return default
     return answer in {"y", "yes"}
 
 
+def llm_config_hint(api_key_env: str) -> str:
+    if looks_like_secret(api_key_env):
+        return "`llm.api_key_env` looks like an API key; set it to an environment variable name such as OPENAI_API_KEY, then put the key in that environment variable."
+    return f"Set environment variable `{api_key_env}`"
+
+
+def looks_like_secret(value: str) -> bool:
+    lowered = value.lower()
+    return lowered.startswith(("sk-", "sk_", "pk-", "pk_")) or len(value) > 80
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
+
